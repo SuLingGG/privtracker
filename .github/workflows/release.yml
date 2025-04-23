@@ -35,6 +35,4 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags:
-            - meehow/privtracker:latest
-            - meehow/privtracker:${{ github.ref_name }}
+          tags: meehow/privtracker:latest
