@@ -40,7 +40,9 @@ func logRequestMiddleware(next http.Handler) http.Handler {
 
 func headersMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Strict-Transport-Security", "max-age=31536000") // hsts
+		if r.TLS != nil {
+			w.Header().Set("Strict-Transport-Security", "max-age=31536000") // hsts
+		}
 		w.Header().Set("Server", "PrivTracker")
 		next.ServeHTTP(w, r)
 	})

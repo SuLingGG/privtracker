@@ -17,7 +17,8 @@ type AnnounceResponse struct {
 	Complete   int    `bencode:"complete"`
 	Incomplete int    `bencode:"incomplete"`
 	Peers      []byte `bencode:"peers"`
-	PeersIPv6  []byte `bencode:"peers_ipv6"`
+	PeersIPv6  []byte `bencode:"peers6,omitempty"`
+	ExternalIP []byte `bencode:"external ip,omitempty"`
 }
 
 func announce(w http.ResponseWriter, r *http.Request) {
@@ -65,6 +66,7 @@ func announce(w http.ResponseWriter, r *http.Request) {
 		Incomplete: numLeechers,
 		Peers:      peersIPv4,
 		PeersIPv6:  peersIPv6,
+		ExternalIP: ip.To4(),
 	}
 	w.Header().Add("X-PrivTracker", fmt.Sprintf("s:%d l:%d", numSeeders, numLeechers))
 	if err := bencode.Marshal(w, resp); err != nil {
@@ -81,11 +83,14 @@ func getRemoteIP(r *http.Request) net.IP {
 	ip := net.ParseIP(addr)
 	if ip.IsPrivate() {
 		ips := strings.Split(r.Header.Get("X-Forwarded-For"), ",")
-		if len(ips) > 0 {
-			ipForwarded := net.ParseIP(strings.TrimSpace(ips[0]))
-			if ipForwarded != nil {
+		for _, maybeIP := range ips {
+			ipForwarded := net.ParseIP(strings.TrimSpace(maybeIP))
+			if !ipForwarded.IsPrivate() {
 				ip = ipForwarded
+				break
 			}
+		}
+		if len(ips) > 0 {
 		}
 	}
 	return ip

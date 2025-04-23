@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/net/publicsuffix"
 )
 
 func main() {
@@ -20,7 +21,7 @@ func main() {
 	handler := router(recoveryMiddleware, headersMiddleware, logRequestMiddleware)
 	if port == "443" {
 		go redirect80()
-		fmt.Println("PrivTracker listening on https://0.0.0.0/")
+		fmt.Println("PrivTracker listening on https://0.0.0.0/ (please use your FQDN to access this server)")
 		log.Fatal(http.Serve(autocertListener(), handler))
 	} else {
 		fmt.Printf("PrivTracker listening on http://0.0.0.0:%s/\n", port)
@@ -59,6 +60,10 @@ func autocertListener() net.Listener {
 
 func redirect(w http.ResponseWriter, r *http.Request) {
 	url := fmt.Sprintf("https://%s/", r.Host)
+	if _, icann := publicsuffix.PublicSuffix(r.Host); !icann {
+		// fallback in case we can't get FQDN
+		url = "https://privtracker.com/"
+	}
 	http.Redirect(w, r, url, http.StatusMovedPermanently)
 }
 
